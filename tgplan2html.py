@@ -90,8 +90,17 @@ def getAndMergePlanJson(pattern):
 
        data = {}
        for jsonfile in path_list:
+
           with open(jsonfile) as f:
-            data = remerge(("defaults", data), ("overrides", json.load(f)), source_map={})
+            tmp = [] 
+            jtmp = json.load(f)
+
+            jtmp['resource_changes'][0]['terragrunt_path'] = jsonfile.split('/.terragrunt-cache')[0]
+            tmp.append(jtmp['resource_changes'][0])
+          
+            jtmp['resource_changes'] = tmp
+ 
+            data = remerge(("defaults", data), ("overrides", jtmp), source_map={})
        return data
 
     except Exception as e:
@@ -142,7 +151,7 @@ def createReport(pattern):
              for k, v in item['change']['after'].items():
                  after[k] = v
        
-          actions[action[0]]['resources'].append({'type': item['type'], 'mode': item['mode'], 'before': before, 'after': after})
+          actions[action[0]]['resources'].append({'type': item['type'], 'path': item['terragrunt_path'], 'mode': item['mode'], 'before': before, 'after': after})
 
        log.debug(actions)
        

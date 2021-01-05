@@ -263,10 +263,17 @@ pre#raw-output {
     display: none;
 }
 
-#chartplan {
+#chartplan1 {
     width: 320px;
     margin-bottom: 50px;
     margin-top: 50px;
+}
+
+#chartplan2 {
+    float:right;
+    margin-bottom: 50px;
+    margin-top: 50px;
+    margin-left: 50px;
 }
 
 </style>
@@ -337,7 +344,7 @@ pre#raw-output {
     </div>
     <div class="container">
         <h1>Reporting: terragrunt plan-all</h1>
-        <div id="chartplan"></div>
+        <div style="display: inline-flex;"><div id="chartplan1"></div><div id="chartplan2"></div></div>
         <div id="prettyplan" class="prettyplan">
             <ul id="warnings" class="warnings">
             {% if data['delete']['count'] > 0 or data['recreate']['count'] > 0 %}
@@ -359,7 +366,7 @@ pre#raw-output {
                     <div class="summary" onclick="accordion(this)">
                         <span class="badge">{{ a }}</span>
                         <span class="id">
-                            <span class="id-segment type">{{ d['type'] }}</span>
+                            <span class="id-segment type">{{ d['type'] }} ({{ d['path'] }})</span>
                             <span class="id-segment mode">{{ d['mode'] }}</span>
                         </span>
                         <span class="change-count">{{ (d['after']|length) - (d['before']|length) }} changes</span>
@@ -394,7 +401,7 @@ pre#raw-output {
     </div>
 <script>
 var chart1 = c3.generate({
-    bindto: '#chartplan',
+    bindto: '#chartplan1',
     data: {
         columns: [
             ["create", {{ data['create']['count'] |default(0) }}],
@@ -409,6 +416,21 @@ var chart1 = c3.generate({
     },
     donut: {
         title: "Distribution of Changes"
+    }
+});
+var chart2 = c3.generate({
+    bindto: '#chartplan2',
+    data: {
+        columns: [
+            ["create", {{ data['create']['count'] |default(0) }}],
+            ["update", {{ data['update']['count'] |default(0) }}],
+            ["delete", {{ data['delete']['count'] |default(0) }}],
+            ["recreate", {{ data['recreate']['count'] |default(0) }}]
+        ],
+        type: 'bar',
+    },
+    size: {
+      width: 600
     }
 });
 </script>
