@@ -3,12 +3,19 @@
 
 <head>
     <meta charset="utf-8" />
-    <title>prettyplan cli</title>
+    <title>Reporting: terragrunt plan-all at {{ reporttime }}</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <style>body {
+    <script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jquery.json-viewer@1.4.0/json-viewer/jquery.json-viewer.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/d3@5.0.0/dist/d3.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/c3@0.7.20/c3.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/c3@0.7.20/c3.min.css" type="text/css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/jquery.json-viewer@1.4.0/json-viewer/jquery.json-viewer.css" type="text/css" rel="stylesheet">
+<style>
+
+body {
     font-family: Arial, Helvetica, sans-serif;
     text-rendering: optimizeLegibility;
-    background: #ECF7FE;
     color: #000000c0;
     font-size: 15px;
     margin: 0;
@@ -27,7 +34,7 @@
 .stripe {
     width: 100%;
     height: 5px;
-    background: #5C4CE4;
+    background: #1f77b4;
     animation-name: wipe-in;
     animation-duration: 1s;
 }
@@ -47,12 +54,12 @@
     padding-top: 10px;
     padding-right: 10px;
     font-size: 10px;
-    color: #4526AC;
+    color: #1f77b4;
     text-align: right;
 }
 
 #branding a {
-    color: #4526AC;
+    color: #1f77b4;
 }
 
 .container {
@@ -65,13 +72,14 @@
 
 h1, h2 {
     text-align: center;
-    color: #4526AC;
+    color: #1f77b4;
 }
 
 button {
     font-size: 18px;
-    background: #5C4CE4;
+    background: #1f77b4;
     color: #fff;
+x-shadow: 0 2px 6px 0 hsla(0, 0%, 0%, 0.2);
     box-shadow: 0 2px 6px 0 hsla(0, 0%, 0%, 0.2);
     border: none;
     border-radius: 2px;
@@ -80,12 +88,12 @@ button {
 }
 
 button:hover {
-    background: #6567EA;
+    background: #1f92b4;
     cursor: pointer;
 }
 
 button:active {
-    background: #5037CA;
+    background: #1f77b4;
 }
 
 button.text-button {
@@ -117,7 +125,7 @@ button.text-button.major:hover {
     font-size: 13px;
 }
 
-.prettyplan li {
+.prettyplan ul li {
     list-style: none;
     background: #ffffffe6;
     padding: 10px;
@@ -212,13 +220,25 @@ li.read .badge {
 }
 
 .changes table td {
-    padding: 10px;
     width: 40%;
 }
 
 pre {
     white-space: pre-wrap;
 }
+
+ol.json-array li {
+    padding: 0px;
+    box-shadow: none;
+    background: none;
+}
+
+ul.json-dict li {
+    padding: 0px;
+    box-shadow: none;
+    background: none;
+}
+
 pre#raw-output {
     background-color: rgba(0, 0, 0, 0.05);
     padding: 8px;
@@ -241,48 +261,83 @@ pre#raw-output {
 
 .collapsed, .hidden {
     display: none;
-}</style>
-    <script>function accordion(element) {
-    const changes = element.parentElement.getElementsByClassName('changes');
-    for (var i = 0; i < changes.length; i++) {
-        changes[i].classList.toggle('collapsed');
-    }
 }
 
-function expandAll() {
-    const sections = document.querySelectorAll('.changes.collapsed');
-
-    for (var i = 0; i < sections.length; i++) {
-        sections[i].classList.toggle('collapsed');
-    }
-
-    document.querySelector('.expand-all').classList.toggle('hidden');
-    document.querySelector('.collapse-all').classList.toggle('hidden');
+#chartplan {
+    width: 320px;
+    margin-bottom: 50px;
+    margin-top: 50px;
 }
 
-function collapseAll() {
-    const sections = document.querySelectorAll('.changes:not(.collapsed)');
+</style>
+<script>
 
-    for (var i = 0; i < sections.length; i++) {
-        sections[i].classList.toggle('collapsed');
-    }
+	function accordion(element) {
+	    const changes = element.parentElement.getElementsByClassName('changes');
+	    for (var i = 0; i < changes.length; i++) {
+	        changes[i].classList.toggle('collapsed');
+	    }
+	}
+	
+	function expandAll() {
+	    const sections = document.querySelectorAll('.changes.collapsed');
+	
+	    for (var i = 0; i < sections.length; i++) {
+	        sections[i].classList.toggle('collapsed');
+	    }
+	
+	    document.querySelector('.expand-all').classList.toggle('hidden');
+	    document.querySelector('.collapse-all').classList.toggle('hidden');
+	}
+	
+	function collapseAll() {
+	    const sections = document.querySelectorAll('.changes:not(.collapsed)');
+	
+	    for (var i = 0; i < sections.length; i++) {
+	        sections[i].classList.toggle('collapsed');
+	    }
+	
+	    document.querySelector('.expand-all').classList.toggle('hidden');
+	    document.querySelector('.collapse-all').classList.toggle('hidden');
+	}
+	
+	function toggleRawPlan() {
+	    document.getElementById('raw-output').classList.toggle('collapsed');
+	}
+	
+	$(function() {
+	
+		var options = {
+		  collapsed: $('#collapsed').is(':checked'),
+		  rootCollapsable: $('#root-collapsable').is(':checked'),
+		  withQuotes: $('#with-quotes').is(':checked'),
+		  withLinks: $('#with-links').is(':checked')
+		};
+	
+		function renderJson() {
+	
+			$('.json-input').each(function( index ) {
+				var input = eval('(' + $(this).attr('data') + ')');
+				$(this).append('<pre class="json-renderer"></pre>');
+				$(this).find('pre').jsonViewer(input, options);
+			});
+		}
+	
+		// Display JSON sample on page load
+		renderJson();
+	});
 
-    document.querySelector('.expand-all').classList.toggle('hidden');
-    document.querySelector('.collapse-all').classList.toggle('hidden');
-}
-
-function toggleRawPlan() {
-    document.getElementById('raw-output').classList.toggle('collapsed');
-}</script>
+</script>
 </head>
 
 <body>
     <div class="stripe"></div>
     <div id="branding">
-        Generated at {{reportTime}}<br />
+        Generated at {{reporttime}}<br />
     </div>
     <div class="container">
-        <h1>Terragrunt plan version</h1>
+        <h1>Reporting: terragrunt plan-all</h1>
+        <div id="chartplan"></div>
         <div id="prettyplan" class="prettyplan">
             <ul id="warnings" class="warnings">
             {% if data['delete']['count'] > 0 or data['recreate']['count'] > 0 %}
@@ -307,7 +362,29 @@ function toggleRawPlan() {
                             <span class="id-segment type">{{ d['type'] }}</span>
                             <span class="id-segment mode">{{ d['mode'] }}</span>
                         </span>
-                        <span class="change-count">{{ d['after']|length }} changes</span>
+                        <span class="change-count">{{ (d['after']|length) - (d['before']|length) }} changes</span>
+                    </div>
+                    <div class="changes collapsed">
+                        <table>
+                        {% set nb = [(d['after']|length), (d['before']|length)]|max -%}
+                        {% set keys = d['after'].keys()|list -%}
+                            <thead>
+                                <tr>
+                                    <th>properties</th>
+                                    <th>value before</th>
+                                    <th>value after</th>
+                                </tr>
+                            </thead>
+                        {% for i in range(nb) %}
+                            <tr>
+                                <td class="property">
+                                    {{ keys[i] }}
+                                </td>
+                                <td class="old-value json-input" data='{{ (d['before'][keys[i]] |default(None)) |tojson }}'></td>
+                                <td class="new-value json-input" data='{{ (d['after'][keys[i]] |default(None)) |tojson }}'></td>
+                            </tr>
+                        {% endfor %}
+                        </table>
                     </div>
                 </li>
                 {% endfor %}
@@ -315,6 +392,26 @@ function toggleRawPlan() {
             </ul>
         </div>
     </div>
+<script>
+var chart1 = c3.generate({
+    bindto: '#chartplan',
+    data: {
+        columns: [
+            ["create", {{ data['create']['count'] |default(0) }}],
+            ["update", {{ data['update']['count'] |default(0) }}],
+            ["delete", {{ data['delete']['count'] |default(0) }}],
+            ["recreate", {{ data['recreate']['count'] |default(0) }}]
+        ],
+        type : 'donut',
+        onclick: function (d, i) { console.log("onclick", d, i); },
+        onmouseover: function (d, i) { console.log("onmouseover", d, i); },
+        onmouseout: function (d, i) { console.log("onmouseout", d, i); }
+    },
+    donut: {
+        title: "Distribution of Changes"
+    }
+});
+</script>
 </body>
 
 </html>

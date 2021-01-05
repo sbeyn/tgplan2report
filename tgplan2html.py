@@ -147,7 +147,7 @@ def createReport(pattern):
        log.debug(actions)
        
        # Set render html report
-       rendered = render_template('report.html', reportime=now, data=actions)
+       rendered = render_template('report.html', reporttime=now, data=actions)
        log.debug(rendered)
 
        # Write file report.html
