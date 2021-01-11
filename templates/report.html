@@ -34,7 +34,7 @@ body {
 .stripe {
     width: 100%;
     height: 5px;
-    background: #1f77b4;
+    background: #000000;
     animation-name: wipe-in;
     animation-duration: 1s;
 }
@@ -49,13 +49,11 @@ body {
     }
 }
 
-#branding {
-    float: right;
-    padding-top: 10px;
+.description {
+    padding-bottom: 4px;
     padding-right: 10px;
-    font-size: 10px;
-    color: #1f77b4;
-    text-align: right;
+    font-size: 14px;
+    color: #000000;
 }
 
 #branding a {
@@ -71,8 +69,8 @@ body {
 }
 
 h1, h2 {
-    text-align: center;
-    color: #1f77b4;
+    text-align: left;
+    color: #000000;
 }
 
 button {
@@ -276,6 +274,33 @@ pre#raw-output {
     margin-left: 50px;
 }
 
+.alert {
+  padding: 20px;
+  background-color: #f44336;
+  color: white;
+  opacity: 1;
+  transition: opacity 0.6s;
+  margin-bottom: 15px;
+}
+
+.alert.warning {background-color: #ff9800;}
+.alert.info {background-color: #2196F3;}
+
+.closebtn {
+  margin-left: 15px;
+  color: white;
+  font-weight: bold;
+  float: right;
+  font-size: 22px;
+  line-height: 20px;
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+.closebtn:hover {
+  color: black;
+}
+
 </style>
 <script>
 
@@ -339,22 +364,33 @@ pre#raw-output {
 
 <body>
     <div class="stripe"></div>
-    <div id="branding">
-        Generated at {{reporttime}}<br />
-    </div>
     <div class="container">
-        <h1>Reporting: terragrunt plan-all</h1>
+        <h1>Report infrastructure changes as code with Terragrunt</h1>
+        <div class="description">
+          It's result of the generation of execution plan job <a src="http://">#3245</a> in our integration test (.gitlab-ci.yml) for production.  
+        </div>
+        <div class="description">
+            <b>Generated at {{reporttime}}</b>
+        </div>
         <div style="display: inline-flex;"><div id="chartplan1"></div><div id="chartplan2"></div></div>
         <div id="prettyplan" class="prettyplan">
-            <ul id="warnings" class="warnings">
-            {% if data['delete']['count'] > 0 or data['recreate']['count'] > 0 %}
-                <li>
-                    <span>Resources Delete({{data['delete']['count']}}) and Recreate({{data['recreate']['count']}})</span>
-                </li>
+            {% if data['delete']['count'] > 0 %}
+                <div class="alert warning">
+                  <span class="closebtn" onclick="this.parentElement.style.display='none';">&times;</span> 
+                  <strong>Warning!</strong> Indicates a potentially negative action: Resources Delete({{data['delete']['count']}}).
+                </div>
             {% endif %}
-            </ul>
+            {% if data['recreate']['count'] > 0 %}
+                <div class="alert">
+                  <span class="closebtn" onclick="this.parentElement.style.display='none';">&times;</span> 
+                  <strong>Danger!</strong> Indicates a dangerous or potentially negative action: Recreate({{data['recreate']['count']}}).
+                </div>
+            {% endif %}
             {% if data['create']['count'] == 0 and data['update']['count'] == 0 and data['delete']['count'] == 0 and data['recreate']['count'] == 0 %}
-                <h2>No changes. Infrastructure is up-to-date.</h2>
+                <div class="alert info">
+                  <span class="closebtn" onclick="this.parentElement.style.display='none';">&times;</span> 
+                  <strong>Info!</strong> No changes. Infrastructure is up-to-date.
+                </div>
             {% else %}
                 <button class="expand-all" onclick="expandAll()">Expand all</button>
                 <button class="collapse-all hidden" onclick="collapseAll()">Collapse all</button>
@@ -366,15 +402,19 @@ pre#raw-output {
                     <div class="summary" onclick="accordion(this)">
                         <span class="badge">{{ a }}</span>
                         <span class="id">
-                            <span class="id-segment type">{{ d['type'] }} ({{ d['path'] }})</span>
-                            <span class="id-segment mode">{{ d['mode'] }}</span>
+                            <span class="id-segment type">{{ d['type'] }}</span>
+                            <span class="id-segment mode">{{ d['path'] }}</span>
                         </span>
-                        <span class="change-count">{{ (d['after']|length) - (d['before']|length) }} changes</span>
+                        <span class="change-count">{{ d['changes'] }} changes</span>
                     </div>
                     <div class="changes collapsed">
                         <table>
                         {% set nb = [(d['after']|length), (d['before']|length)]|max -%}
+                        {% if ((d['after']|length) - (d['before']|length)) <= 0 -%}
+                        {% set keys = d['before'].keys()|list -%}
+                        {% else -%}
                         {% set keys = d['after'].keys()|list -%}
+                        {% endif -%}
                             <thead>
                                 <tr>
                                     <th>properties</th>
@@ -414,8 +454,11 @@ var chart1 = c3.generate({
         onmouseover: function (d, i) { console.log("onmouseover", d, i); },
         onmouseout: function (d, i) { console.log("onmouseout", d, i); }
     },
+    color: {
+        pattern: ['#2e7d32', '#ff8f00', '#6b6a6a', '#b71c1c']
+    },
     donut: {
-        title: "Distribution of Changes"
+        title: "Distribution of actions"
     }
 });
 var chart2 = c3.generate({
@@ -428,6 +471,9 @@ var chart2 = c3.generate({
             ["recreate", {{ data['recreate']['count'] |default(0) }}]
         ],
         type: 'bar',
+    },
+    color: {
+        pattern: ['#2e7d32', '#ff8f00', '#6b6a6a', '#b71c1c']
     },
     size: {
       width: 600

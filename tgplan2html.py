@@ -21,7 +21,16 @@ now = datetime.now(timezone.utc).astimezone()
 actions = {'create': {'count': 0, 'resources':[]},
            'update': {'count': 0, 'resources':[]},
            'recreate': {'count': 0, 'resources':[]},
-           'delete': {'count': 0, 'resources':[]}}
+           'delete': {'count': 0, 'resources':[]},
+           'read': {'count': 0, 'resources':[]}}
+
+def flatten_it(d):
+    if isinstance(d, list) or isinstance(d, tuple):
+        return tuple([flatten_it(item) for item in d])
+    elif isinstance(d, dict):
+        return tuple([(flatten_it(k), flatten_it(v)) for k, v in sorted(d.items())])
+    else:
+        return d
 
 def findkeys(node, kv):
     if isinstance(node, list):
@@ -95,12 +104,13 @@ def getAndMergePlanJson(pattern):
             tmp = [] 
             jtmp = json.load(f)
 
-            jtmp['resource_changes'][0]['terragrunt_path'] = jsonfile.split('/.terragrunt-cache')[0]
-            tmp.append(jtmp['resource_changes'][0])
+            for item in jtmp['resource_changes']:
+               item['terragrunt_path'] = jsonfile.split('/.terragrunt-cache')[0]
+               tmp.append(item)
           
             jtmp['resource_changes'] = tmp
- 
             data = remerge(("defaults", data), ("overrides", jtmp), source_map={})
+
        return data
 
     except Exception as e:
@@ -137,6 +147,7 @@ def createReport(pattern):
           elif action[0] == 'delete':
              actions['delete']['count'] += 1
           else:
+             action[0] = 'read'
              actions['read']['count'] += 1
 
           if item['change']['before']:
@@ -150,11 +161,14 @@ def createReport(pattern):
           if item['change']['after']:
              for k, v in item['change']['after'].items():
                  after[k] = v
-       
-          actions[action[0]]['resources'].append({'type': item['type'], 'path': item['terragrunt_path'], 'mode': item['mode'], 'before': before, 'after': after})
+          if action[0] == 'update':
+             changes = len(set(flatten_it(after)) - set(flatten_it(before)))
+          else:
+             changes = abs(len(after) - len(before))
+          actions[action[0]]['resources'].append({'type': item['type'], 'path': item['terragrunt_path'], 'mode': item['mode'], 'changes': changes, 'before': before, 'after': after})
 
        log.debug(actions)
-       
+
        # Set render html report
        rendered = render_template('report.html', reporttime=now, data=actions)
        log.debug(rendered)
