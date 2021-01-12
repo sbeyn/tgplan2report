@@ -56,8 +56,10 @@ body {
     color: #000000;
 }
 
-#branding a {
-    color: #1f77b4;
+.description a:hover {
+  color: #1f77b4;
+  text-decoration: underline;
+  cursor: pointer;
 }
 
 .container {
@@ -137,23 +139,23 @@ button.text-button.major:hover {
 }
 
 .prettyplan ul.actions li.update {
-    border-left: 3px solid #ff8f00;
+    border-left: 3px solid #4c9fff;
 }
 
 .prettyplan ul.actions li.create {
-    border-left: 3px solid #2e7d32;
+    border-left: 3px solid #85e2ff;
 }
 
-.prettyplan ul.actions li.destroy {
-    border-left: 3px solid #b71c1c;
+.prettyplan ul.actions li.delete {
+    border-left: 3px solid #0079af;
 }
 
 .prettyplan ul.actions li.recreate {
-    border-left: 3px solid #1565c0;
+    border-left: 3px solid #0037c9;
 }
 
 .prettyplan ul.actions li.read {
-    border-left: 3px solid #519bf0;
+    border-left: 3px solid #ffffff;
 }
 
 .badge {
@@ -170,23 +172,23 @@ button.text-button.major:hover {
 }
 
 li.update .badge {
-    color: #ff8f00;
+    color: #4c9fff;
 }
 
 li.create .badge {
-    color: #2e7d32;
+    color: #85e2ff;
 }
 
-li.destroy .badge {
-    color: #b71c1c;
+li.delete .badge {
+    color: #0079af;
 }
 
 li.recreate .badge {
-    color: #1565c0;
+    color: #0037c9;
 }
 
 li.read .badge {
-    color: #519bf0;
+    color: #000000;
 }
 
 .id-segment:not(:last-child)::after {
@@ -363,14 +365,13 @@ pre#raw-output {
 </head>
 
 <body>
-    <div class="stripe"></div>
     <div class="container">
         <h1>Report infrastructure changes as code with Terragrunt</h1>
         <div class="description">
-          It's result of the generation of execution plan job <a src="http://">#3245</a> in our integration test (.gitlab-ci.yml) for production.  
+          It's result of the generation of execution plan job <a href="{{ project_url }}/-/pipelines/{{ pipeline_id }}">#{{ pipeline_id }}</a> in our integration test (.gitlab-ci.yml) for production.  
         </div>
         <div class="description">
-            <b>Generated at {{reporttime}}</b>
+            <b>Generated at {{ date.strftime('%a, %d %b %Y %H:%M:%S %Z %z') }}</b>
         </div>
         <div style="display: inline-flex;"><div id="chartplan1"></div><div id="chartplan2"></div></div>
         <div id="prettyplan" class="prettyplan">
@@ -455,7 +456,7 @@ var chart1 = c3.generate({
         onmouseout: function (d, i) { console.log("onmouseout", d, i); }
     },
     color: {
-        pattern: ['#2e7d32', '#ff8f00', '#6b6a6a', '#b71c1c']
+        pattern: ['#85e2ff', '#4c9fff', '#0079af', '#0037c9']
     },
     donut: {
         title: "Distribution of actions"
@@ -464,7 +465,9 @@ var chart1 = c3.generate({
 var chart2 = c3.generate({
     bindto: '#chartplan2',
     data: {
+        x: 'x',
         columns: [
+            ['x', '{{ date.strftime('%Y-%m-%d') }}'],
             ["create", {{ data['create']['count'] |default(0) }}],
             ["update", {{ data['update']['count'] |default(0) }}],
             ["delete", {{ data['delete']['count'] |default(0) }}],
@@ -473,10 +476,19 @@ var chart2 = c3.generate({
         type: 'bar',
     },
     color: {
-        pattern: ['#2e7d32', '#ff8f00', '#6b6a6a', '#b71c1c']
+        pattern: ['#85e2ff', '#4c9fff', '#0079af', '#0037c9']
     },
     size: {
       width: 600
+    },
+    axis : {
+        x : {
+            type : 'timeseries',
+            tick: {
+                fit: true,
+                format: "%e %b %y"
+            }
+        }
     }
 });
 </script>

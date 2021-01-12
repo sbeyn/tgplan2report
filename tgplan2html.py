@@ -116,13 +116,13 @@ def getAndMergePlanJson(pattern):
     except Exception as e:
        log.error('{c} - {m}'.format(c = type(e).__name__, m = str(e)))
 
-def createReport(pattern):
+def createReport(args):
 
     # Set variables
     warning = False
 
     # Get terragrunt plan merged
-    data = getAndMergePlanJson(pattern)
+    data = getAndMergePlanJson(args.jsonplan)
     log.debug(data)
 
     try:
@@ -170,7 +170,7 @@ def createReport(pattern):
        log.debug(actions)
 
        # Set render html report
-       rendered = render_template('report.html', reporttime=now, data=actions)
+       rendered = render_template('report.html', date=now, project_url=args.project_url, pipeline_id=args.pipeline_id, data=actions)
        log.debug(rendered)
 
        # Write file report.html
@@ -187,6 +187,10 @@ if __name__ == '__main__':
     with app.app_context():
 
        parser = argparse.ArgumentParser()
+       parser.add_argument("-u", "--url", type=str, dest='project_url', required=True,
+                           help="url project gitlab (ex: https://example.com/gitlab-org/gitlab-foss)")
+       parser.add_argument("-i", "--id", type=int, dest='pipeline_id', required=True,
+                           help="pipeline id gitlab (ex: 1355)")
        parser.add_argument("jsonplan", type=str, nargs='?', const=1, default='plan.out.json',
                            help="terraform plan to json format (default: plan.out.json)")
        parser.add_argument("-v", "--verbose", action="store_true",
@@ -201,4 +205,4 @@ if __name__ == '__main__':
        logging.basicConfig(stream=sys.stderr, level=level, format='(%(levelname)s): %(message)s')
 
        # Create report html from terragrunt plan-all
-       createReport(args.jsonplan)
+       createReport(args)
